@@ -1,0 +1,70 @@
+Bufsize: 16384 Threads: 1 Sessions: 1
+timeout
+72330305536 total bytes read
+17658766 total messages read
+4096.000 average messages size
+689.796 MiB/s throughtput
+Bufsize: 16384 Threads: 1 Sessions: 10
+timeout
+95006371840 total bytes read
+23194915 total messages read
+4096.000 average messages size
+906.051 MiB/s throughtput
+Bufsize: 16384 Threads: 1 Sessions: 100
+timeout
+80826048512 total bytes read
+19732922 total messages read
+4096.000 average messages size
+770.817 MiB/s throughtput
+Bufsize: 16384 Threads: 1 Sessions: 1000
+timeout
+52951154688 total bytes read
+12927528 total messages read
+4096.000 average messages size
+504.982 MiB/s throughtput
+Bufsize: 16384 Threads: 1 Sessions: 10000
+NOT Connected
+NOT Connected
+NOT Connected
+NOT Connected
+NOT Connected
+NOT Connected
+NOT Connected
+NOT Connected
+NOT Connected
+NOT Connected
+NOT Connected
+NOT Connected
+NOT Connected
+NOT Connected
+NOT Connected
+NOT Connected
+NOT Connected
+NOT Connected
+NOT Connected
+NOT Connected
+NOT Connected
+NOT Connected
+NOT Connected
+NOT Connected
+NOT Connected
+NOT Connected
+NOT Connected
+NOT Connected
+NOT Connected
+NOT Connected
+NOT Connected
+NOT Connected
+NOT Connected
+NOT Connected
+NOT Connected
+NOT Connected
+NOT Connected
+NOT Connected
+NOT Connected
+NOT Connected
+timeout
+8730279936 total bytes read
+2131416 total messages read
+4096.000 average messages size
+83.258 MiB/s throughtput
