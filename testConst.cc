@@ -3,10 +3,6 @@ using namespace std;
 
 class A {
     public:
-        void run()
-        {
-            cout<<"A::run()"<<endl;
-        }
         void run() const
         {
             cout<<"A::run()"<<endl;
@@ -21,5 +17,6 @@ int main()
 {
     A a;
     test(a);
+    a.run();
     return 0;
 }

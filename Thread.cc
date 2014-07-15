@@ -1,157 +1,93 @@
-// excerpts from http://code.google.com/p/muduo/
-//
-// Use of this source code is governed by a BSD-style license
-// that can be found in the License file.
-//
-// Author: Shuo Chen (giantchen at gmail dot com)
-
+//azhe
+//liuyuanzhe123@126.com
 #include "Thread.h"
-
+#include "Logging.h"
+#include <sys/syscall.h>
+#include <sys/unistd.h>
 #include <boost/weak_ptr.hpp>
 
-#include <unistd.h>
-#include <sys/syscall.h>
-#include <sys/types.h>
-#include <linux/unistd.h>
+namespace netfish {
 
-namespace muduo
+//用线程变量来cache tid
+__thread pid_t t_cachedTid;
+
+pid_t tid()
 {
-namespace CurrentThread
-{
-  __thread const char* t_threadName = "unknown";
-}
-}
-
-namespace
-{
-__thread pid_t t_cachedTid = 0;
-
-pid_t gettid()
-{
-  return static_cast<pid_t>(::syscall(SYS_gettid));
-}
-
-void afterFork()
-{
-  t_cachedTid = gettid();
-  muduo::CurrentThread::t_threadName = "main";
-  // no need to call pthread_atfork(NULL, NULL, &afterFork);
-}
-
-class ThreadNameInitializer
-{
- public:
-  ThreadNameInitializer()
-  {
-    muduo::CurrentThread::t_threadName = "main";
-    pthread_atfork(NULL, NULL, &afterFork);
-  }
-};
-
-ThreadNameInitializer init;
-
-struct ThreadData
-{
-  typedef muduo::Thread::ThreadFunc ThreadFunc;
-  ThreadFunc func_;
-  std::string name_;
-  boost::weak_ptr<pid_t> wkTid_;
-
-  ThreadData(const ThreadFunc& func,
-             const std::string& name,
-             const boost::shared_ptr<pid_t>& tid)
-    : func_(func),
-      name_(name),
-      wkTid_(tid)
-  { }
-
-  void runInThread()
-  {
-    pid_t tid = muduo::CurrentThread::tid();
-    boost::shared_ptr<pid_t> ptid = wkTid_.lock();
-
-    if (ptid)
-    {
-      *ptid = tid;
-      ptid.reset();
+    if (!t_cachedTid) {
+        t_cachedTid = getpid();
     }
+    return t_cachedTid;
+}
 
-    muduo::CurrentThread::t_threadName = name_.c_str();
-    func_(); // FIXME: surround with try-catch, see muduo
-    muduo::CurrentThread::t_threadName = "finished";
-  }
+//依据系统调用来得到pid
+pid_t getpid()
+{
+    return static_cast<pid_t>(syscall(SYS_gettid));
+}
+
+class ThreadData : public boost::noncopyable{
+    public:
+        typedef netfish::Thread::ThreadFunc ThreadFunc;
+        explicit ThreadData(const ThreadFunc & func, boost::shared_ptr<pid_t> & tid)
+            : wkTid_(tid),
+            func_(func)
+        {}
+
+        boost::weak_ptr<pid_t> wkTid_;
+        ThreadFunc func_;
 };
 
-void* startThread(void* obj)
-{
-  ThreadData* data = static_cast<ThreadData*>(obj);
-  data->runInThread();
-  delete data;
-  return NULL;
-}
-
-}
-
-using namespace muduo;
-
-pid_t CurrentThread::tid()
-{
-  if (t_cachedTid == 0)
-  {
-    t_cachedTid = gettid();
-  }
-  return t_cachedTid;
-}
-
-const char* CurrentThread::name()
-{
-  return t_threadName;
-}
-
-bool CurrentThread::isMainThread()
-{
-  return tid() == ::getpid();
-}
-
-AtomicInt32 Thread::numCreated_;
-
-Thread::Thread(const ThreadFunc& func, const std::string& n)
-  : started_(false),
-    joined_(false),
-    pthreadId_(0),
+Thread::Thread(const ThreadFunc& func, const std::string & name)
+    :func_(func),
+    name_(name),
     tid_(new pid_t(0)),
-    func_(func),
-    name_(n)
+    started_(false),
+    joined_(false),
+    pthreadId_(0)
 {
-  numCreated_.increment();
+    
 }
-
 Thread::~Thread()
 {
-  if (started_ && !joined_)
-  {
-    pthread_detach(pthreadId_);
-  }
+    if (started_ && !joined_) { //如果线程没有被join(), 那么执行detach避免线程成为zoombie
+        pthread_detach(pthreadId_);
+    }
+}
+
+//void * Thread::runInThread(void * obj)
+void * runInThread(void * obj)
+{
+    ThreadData * data = reinterpret_cast<ThreadData *>(obj);
+    boost::shared_ptr<pid_t> shTid = data->wkTid_.lock();
+    if (shTid) {
+        *shTid = netfish::tid();    //记录tid
+        shTid.reset();
+    }
+    data->func_();
+    delete data;
+    return NULL;
 }
 
 void Thread::start()
 {
-  assert(!started_);
-  started_ = true;
-
-  ThreadData* data = new ThreadData(func_, name_, tid_);
-  if (pthread_create(&pthreadId_, NULL, &startThread, data))
-  {
-    started_ = false;
-    delete data;
-    abort();
-  }
+    assert(!started_);
+    started_ = true;
+    ThreadData * data = new ThreadData(func_, tid_);
+    if (pthread_create(&pthreadId_, NULL, &runInThread, (void *)data)) {
+        started_ = false;
+        delete data;
+        abort();
+    }
 }
 
 void Thread::join()
 {
-  assert(started_);
-  assert(!joined_);
-  joined_ = true;
-  pthread_join(pthreadId_, NULL);
+    assert(started_);
+    assert(!joined_);
+    if (pthreadId_) {
+        pthread_join(pthreadId_, NULL);
+        joined_ = true;
+    }
+}
+
 }

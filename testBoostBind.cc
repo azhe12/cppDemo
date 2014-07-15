@@ -1,5 +1,8 @@
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
+
 #include <iostream>
 using namespace std;
 
@@ -34,6 +37,9 @@ private:
 
 int main()
 {
-    A a(test);
-    a.run();
+    //A a(test);
+    //boost::shared_ptr<A> aP(new A(test));
+    boost::scoped_ptr<A> aP(new A(test));
+    boost::function<void ()> f = boost::bind(&A::run, aP);
+    f();
 }

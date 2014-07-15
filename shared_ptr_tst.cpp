@@ -1,5 +1,6 @@
 #include <iostream>
 #include "boost/shared_ptr.hpp"
+#include <boost/scoped_ptr.hpp>
 using namespace std;
 class T {
     public:
@@ -8,6 +9,12 @@ class T {
         //T(int val):(val) {}
         ~T() {cout<<"delete T"<<endl;}
 };
+
+void test(T* t)
+{
+    cout<<"test()"<<endl;
+}
+
 int main()
 {
 #if 0
@@ -27,6 +34,9 @@ int main()
 #if 1
         boost::shared_ptr<T> a(new T);
         boost::shared_ptr<T> f(new T);
+        boost::scoped_ptr<T> g(new T);
+        test(a.get());
+        test(get_pointer(g));
 
         a = f;
         //cout<<"a use_count: "<<a.use_count()<<endl;
